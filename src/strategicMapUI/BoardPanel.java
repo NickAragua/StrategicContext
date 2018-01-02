@@ -1,0 +1,201 @@
+package strategicMapUI;
+
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.Point;
+import java.awt.Polygon;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
+import java.awt.event.MouseMotionListener;
+import java.awt.event.MouseWheelEvent;
+import java.awt.event.MouseWheelListener;
+import java.awt.geom.AffineTransform;
+import java.util.List;
+
+import javax.swing.JPanel;
+
+
+public class BoardPanel extends JPanel implements MouseWheelListener, MouseMotionListener, MouseListener {
+    private static final int HEX_X_RADIUS = 40;
+    private static final int HEX_Y_RADIUS = 40;
+    
+    private float scale = 1;
+    private int xOrigin = 0;
+    private int yOrigin = 0;
+    
+    Point mouseStartPoint;
+    
+    BoardState boardState;
+    
+    public BoardPanel(BoardState state) {
+        boardState = state;
+    }
+    
+    @Override
+    public void paintComponent(Graphics g) {
+        super.paintComponent(g);
+        
+        Graphics2D g2D = (Graphics2D) g;
+        //AffineTransform realOriginalTransform = g2D.getTransform();
+        g2D.translate(xOrigin, yOrigin);
+        
+        AffineTransform postOriginTransform = g2D.getTransform();
+
+        drawHexes(g2D, false);
+        g2D.setTransform(postOriginTransform);
+        drawHexes(g2D, true);
+        /*g2D.translate(dragTranslation.getX(), dragTranslation.getY());
+        g2D.translate(SQUARE_HALF_SIZE, SQUARE_HALF_SIZE);
+        AffineTransform originalTransform = g2D.getTransform();
+        drawSquares(g2D, false);
+        g2D.setTransform(originalTransform); // be nice, set the "cursor" back to where it started      
+        drawSquares(g2D, true);
+        g2D.setTransform(originalTransform);
+        drawSelectedSquare(g2D);
+        g2D.setTransform(originalTransform);
+        drawForces(g2D);
+        drawPlannedRoutes(g2D);
+        drawExecutedMovements(g2D);
+        drawEncounters(g2D);
+        drawEncounterPaneLines(g2D);*/
+        
+        //g2D.setTransform(realOriginalTransform);
+    }
+    
+    @Override
+    public Dimension getPreferredSize()
+    {
+        return new Dimension((int) (boardState.getWidth() * HEX_X_RADIUS * 2 * scale), (int) (boardState.getHeight() * HEX_Y_RADIUS * 2 * scale));
+    }
+    
+    private void drawHexes(Graphics2D g2D, boolean outline) {
+        Polygon graphHex = new Polygon();
+        int xRadius = (int) (HEX_X_RADIUS * scale);
+        int yRadius = (int) (HEX_Y_RADIUS * scale);
+        
+        graphHex.addPoint(-xRadius/2, -yRadius);
+        graphHex.addPoint(-xRadius, 0);
+        graphHex.addPoint(-xRadius/2, yRadius);
+        graphHex.addPoint(xRadius/2, yRadius);
+        graphHex.addPoint(xRadius, 0);
+        graphHex.addPoint(xRadius/2, -yRadius);
+
+        g2D.translate(xRadius, yRadius);
+        
+        for(int x = 0; x < boardState.getWidth(); x++) {
+            AffineTransform originalTransform = g2D.getTransform();
+            
+            for(int y = boardState.getHeight() - 1; y >= 0; y--) {
+                
+                if(outline) {
+                    g2D.setColor(new Color(0, 0, 0));
+                    g2D.drawPolygon(graphHex);
+                } else {
+                    g2D.setColor(boardState.getHexColor(x, y));
+                    g2D.fillPolygon(graphHex);
+                }
+                
+                g2D.drawString(x + "," + y, 0, 0);
+                g2D.translate(0, yRadius * 2); 
+            }
+            
+            g2D.setTransform(originalTransform);            
+            g2D.translate(xRadius * 1.5, x % 2 == 0 ? yRadius : -yRadius);
+        }
+       
+    }
+
+    @Override
+    public void mouseWheelMoved(MouseWheelEvent e) {
+        scale += (float) e.getWheelRotation() / 10;
+        this.repaint();
+    }
+    
+    @Override
+    public void mouseDragged(MouseEvent e) {
+        if(mouseStartPoint == null) {
+            return;
+        }        
+        
+        int dx = e.getX() - (int) mouseStartPoint.getX();
+        int dy = e.getY() - (int) mouseStartPoint.getY();
+        
+        xOrigin = dx;
+        yOrigin = dy;
+        this.repaint();
+    }
+
+    @Override
+    public void mouseMoved(MouseEvent e) {
+        // TODO Auto-generated method stub
+        
+    }
+    
+    @Override
+    public void mouseReleased(MouseEvent e) {
+        /*if(e.getButton() == MouseEvent.BUTTON1)
+        {
+            boardState.setSelectedSquare(detectClickedSquare(e));
+            
+            if(boardState.getSelectedEncounter() != null) {
+                int rX = (int) getRenderingX(boardState.getSelectedEncounter().getPosition().getX());
+                int rY = (int) getRenderingY(boardState.getSelectedEncounter().getPosition().getY());
+                
+                encounterPane.setEncounter(boardState.getSelectedEncounter());
+                encounterPane.setLocation(rX, rY);
+                this.add(encounterPane);
+                encounterPane.setVisible(true);
+            } else {
+                encounterPane.clearEncounter();
+                this.remove(encounterPane);
+            }
+        }
+        else if(e.getButton() == MouseEvent.BUTTON3)
+        {
+            if(boardState.getSelectedForces() != null &&
+                    boardState.getSelectedForces().size() > 0) {
+                Coords startPosition = e.isShiftDown() ? boardState.getSelectedForces().get(0).getDestination() :
+                                                        boardState.getSelectedForces().get(0).getPosition();
+                
+                List<Coords> path = PathFinder.findGreedyPath(startPosition, detectClickedSquare(e));
+                
+                for(StrategicForce sf : boardState.getSelectedForces()) {
+                    if(e.isShiftDown()) {
+                        sf.addToPlannedRoute(path);
+                    } else {
+                        sf.setPlannedRoute(path);
+                    }
+                }
+            }
+        }
+        
+        this.repaint();*/
+        mouseStartPoint = null;
+    }
+
+    @Override
+    public void mouseEntered(MouseEvent e) {
+        // TODO Auto-generated method stub
+        
+    }
+
+    @Override
+    public void mouseExited(MouseEvent e) {
+        // TODO Auto-generated method stub
+        
+    }
+
+    @Override
+    public void mousePressed(MouseEvent e) {
+        // TODO Auto-generated method stub
+        mouseStartPoint = e.getPoint();
+    }
+
+    @Override
+    public void mouseClicked(MouseEvent e) {
+        // TODO Auto-generated method stub
+        
+    }
+}
