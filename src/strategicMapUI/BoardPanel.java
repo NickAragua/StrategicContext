@@ -12,9 +12,13 @@ import java.awt.event.MouseMotionListener;
 import java.awt.event.MouseWheelEvent;
 import java.awt.event.MouseWheelListener;
 import java.awt.geom.AffineTransform;
+import java.awt.geom.Point2D;
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.JPanel;
+
+import strategicMap.Coords;
 
 
 public class BoardPanel extends JPanel implements MouseWheelListener, MouseMotionListener, MouseListener {
@@ -25,9 +29,19 @@ public class BoardPanel extends JPanel implements MouseWheelListener, MouseMotio
     private int xOrigin = 0;
     private int yOrigin = 0;
     
-    Point mouseStartPoint;
+    private int postReleaseXOrigin = 0;
+    private int postReleaseYOrigin = 0;
+    
+    Point mouseDragStartPoint = new Point(0, 0);
+    Point mouseDragEndPoint = new Point(0, 0);
+    
+    AffineTransform postOriginTransform;
+    
+    Point clickedPoint;
     
     BoardState boardState;
+    
+    ArrayList<ArrayList<Polygon>> hexes = new ArrayList<>(); 
     
     public BoardPanel(BoardState state) {
         boardState = state;
@@ -37,15 +51,15 @@ public class BoardPanel extends JPanel implements MouseWheelListener, MouseMotio
     public void paintComponent(Graphics g) {
         super.paintComponent(g);
         
-        Graphics2D g2D = (Graphics2D) g;
-        //AffineTransform realOriginalTransform = g2D.getTransform();
-        g2D.translate(xOrigin, yOrigin);
+        Graphics2D g2D = (Graphics2D) g;        
+        g2D.translate(xOrigin + 20, yOrigin + 20);
+        g2D.scale(scale, scale);
         
-        AffineTransform postOriginTransform = g2D.getTransform();
+        postOriginTransform = g2D.getTransform();
 
-        drawHexes(g2D, false);
+        drawHexes(g2D, false, false);
         g2D.setTransform(postOriginTransform);
-        drawHexes(g2D, true);
+        drawHexes(g2D, true, false);
         /*g2D.translate(dragTranslation.getX(), dragTranslation.getY());
         g2D.translate(SQUARE_HALF_SIZE, SQUARE_HALF_SIZE);
         AffineTransform originalTransform = g2D.getTransform();
@@ -60,6 +74,7 @@ public class BoardPanel extends JPanel implements MouseWheelListener, MouseMotio
         drawExecutedMovements(g2D);
         drawEncounters(g2D);
         drawEncounterPaneLines(g2D);*/
+        g2D.setTransform(postOriginTransform);
         
         //g2D.setTransform(realOriginalTransform);
     }
@@ -70,10 +85,16 @@ public class BoardPanel extends JPanel implements MouseWheelListener, MouseMotio
         return new Dimension((int) (boardState.getWidth() * HEX_X_RADIUS * 2 * scale), (int) (boardState.getHeight() * HEX_Y_RADIUS * 2 * scale));
     }
     
-    private void drawHexes(Graphics2D g2D, boolean outline) {
+    /**
+     * This method contains a dirty secret hack: 
+     * @param g2D
+     * @param outline
+     * @param detectHex
+     */
+    private void drawHexes(Graphics2D g2D, boolean outline, boolean detectHex) {
         Polygon graphHex = new Polygon();
-        int xRadius = (int) (HEX_X_RADIUS * scale);
-        int yRadius = (int) (HEX_Y_RADIUS * scale);
+        int xRadius = HEX_X_RADIUS;
+        int yRadius = HEX_Y_RADIUS;
         
         graphHex.addPoint(-xRadius/2, -yRadius);
         graphHex.addPoint(-xRadius, 0);
@@ -82,14 +103,23 @@ public class BoardPanel extends JPanel implements MouseWheelListener, MouseMotio
         graphHex.addPoint(xRadius, 0);
         graphHex.addPoint(xRadius/2, -yRadius);
 
-        g2D.translate(xRadius, yRadius);
+        graphHex.translate(xRadius, yRadius);
         
-        for(int x = 0; x < boardState.getWidth(); x++) {
-            AffineTransform originalTransform = g2D.getTransform();
-            
+        for(int x = 0; x < boardState.getWidth(); x++) {            
             for(int y = boardState.getHeight() - 1; y >= 0; y--) {
-                
-                if(outline) {
+                if(detectHex) {
+                    Point2D transformedClickedPoint = postOriginTransform.transform((Point2D) clickedPoint, null);
+                    
+                    if(graphHex.contains(transformedClickedPoint)) {
+                        int detectedY = y;
+                        if(x % 2 == 1) {
+                            detectedY++;
+                        }
+                        
+                        boardState.setSelectedHex(new Coords(x - 1, detectedY));
+                        return;
+                    }
+                } else if(outline) {
                     g2D.setColor(new Color(0, 0, 0));
                     g2D.drawPolygon(graphHex);
                 } else {
@@ -97,12 +127,21 @@ public class BoardPanel extends JPanel implements MouseWheelListener, MouseMotio
                     g2D.fillPolygon(graphHex);
                 }
                 
-                g2D.drawString(x + "," + y, 0, 0);
-                g2D.translate(0, yRadius * 2); 
+                if(!detectHex) {
+                    g2D.drawString(x + "," + y, graphHex.xpoints[0] + (xRadius / 4), graphHex.ypoints[0] + yRadius);
+                }
+                graphHex.translate(0, yRadius * 2);
             }
             
-            g2D.setTransform(originalTransform);            
-            g2D.translate(xRadius * 1.5, x % 2 == 0 ? yRadius : -yRadius);
+            //g2D.setTransform(originalTransform);    
+            int yTranslation = boardState.getHeight() * yRadius * 2;
+            if(x % 2 == 0) {
+                yTranslation += yRadius;
+            } else {
+                yTranslation -= yRadius;
+            }
+            
+            graphHex.translate((int) (xRadius * 1.5), -yTranslation);
         }
        
     }
@@ -115,16 +154,18 @@ public class BoardPanel extends JPanel implements MouseWheelListener, MouseMotio
     
     @Override
     public void mouseDragged(MouseEvent e) {
-        if(mouseStartPoint == null) {
+        /*if(mouseDragStartPoint == null) {
             return;
         }        
         
-        int dx = e.getX() - (int) mouseStartPoint.getX();
-        int dy = e.getY() - (int) mouseStartPoint.getY();
+        int dx = e.getX() - (int) mouseDragStartPoint.getX() + (int) mouseDragEndPoint.getX();
+        int dy = e.getY() - (int) mouseDragStartPoint.getY() + (int) mouseDragEndPoint.getY();
         
-        xOrigin = dx;
-        yOrigin = dy;
-        this.repaint();
+        if(dx > 10 || dy > 10) {        
+            xOrigin = dx;
+            yOrigin = dy;
+            this.repaint();
+        }*/
     }
 
     @Override
@@ -135,11 +176,13 @@ public class BoardPanel extends JPanel implements MouseWheelListener, MouseMotio
     
     @Override
     public void mouseReleased(MouseEvent e) {
-        /*if(e.getButton() == MouseEvent.BUTTON1)
+        if(e.getButton() == MouseEvent.BUTTON1)
         {
-            boardState.setSelectedSquare(detectClickedSquare(e));
+            clickedPoint = e.getPoint();
+            drawHexes(null, false, true);
+            //boardState.setSelectedHex(detectClickedBoardCoords(e));
             
-            if(boardState.getSelectedEncounter() != null) {
+            /*if(boardState.getSelectedEncounter() != null) {
                 int rX = (int) getRenderingX(boardState.getSelectedEncounter().getPosition().getX());
                 int rY = (int) getRenderingY(boardState.getSelectedEncounter().getPosition().getY());
                 
@@ -150,9 +193,9 @@ public class BoardPanel extends JPanel implements MouseWheelListener, MouseMotio
             } else {
                 encounterPane.clearEncounter();
                 this.remove(encounterPane);
-            }
+            }*/
         }
-        else if(e.getButton() == MouseEvent.BUTTON3)
+        /*else if(e.getButton() == MouseEvent.BUTTON3)
         {
             if(boardState.getSelectedForces() != null &&
                     boardState.getSelectedForces().size() > 0) {
@@ -172,7 +215,8 @@ public class BoardPanel extends JPanel implements MouseWheelListener, MouseMotio
         }
         
         this.repaint();*/
-        mouseStartPoint = null;
+        mouseDragEndPoint = e.getPoint();
+        this.repaint();
     }
 
     @Override
@@ -189,13 +233,45 @@ public class BoardPanel extends JPanel implements MouseWheelListener, MouseMotio
 
     @Override
     public void mousePressed(MouseEvent e) {
-        // TODO Auto-generated method stub
-        mouseStartPoint = e.getPoint();
+        mouseDragStartPoint = e.getPoint();
     }
 
     @Override
     public void mouseClicked(MouseEvent e) {
         // TODO Auto-generated method stub
         
+    }
+    
+    /**
+     * Transforms a set of coordinates on the board panel into coordinates usable by the board.
+     * @param localX
+     * @param localY
+     * @return
+     */
+    public Coords detectClickedBoardCoords(MouseEvent e) {
+        int localX = e.getX();
+        int localY = e.getY();
+        
+        localX += xOrigin + (HEX_X_RADIUS * 2* scale);
+        localY += yOrigin + (HEX_Y_RADIUS * 2* scale);
+        
+        localX /= (HEX_X_RADIUS * 2 * scale);
+        
+        if(localX % 2 == 0) {
+            localY -= HEX_Y_RADIUS * scale * 1.5;
+        } else {
+            localY += HEX_Y_RADIUS * scale * 1.5;
+        }
+        
+        localY /= HEX_Y_RADIUS * 2 * scale;
+        localY = boardState.getHeight() - localY + 1;
+
+        System.out.println("Clicked" + e.getX() + ":" + e.getY() + " resolves to " + localX + ":" + localY);
+        
+        // now we have moved into a reference frame with 0,0 as the point in the center of the hex at (0, height)
+        
+        clickedPoint = new Point(localX, localY); //new Point(localX / (HEX_X_RADIUS * 2), localY / (HEX_Y_RADIUS * 2));
+        
+        return new Coords(localX - 1, localY);
     }
 }

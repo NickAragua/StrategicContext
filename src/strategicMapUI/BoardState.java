@@ -2,6 +2,7 @@ package strategicMapUI;
 import java.awt.Color;
 
 import strategicMap.Board;
+import strategicMap.Coords;
 import strategicMap.Hex;
 
 /**
@@ -13,6 +14,7 @@ import strategicMap.Hex;
  */
 public class BoardState {
     private Board board;
+    private Coords selectedCoords;
     
     public BoardState(Board board) {
         this.board = board;
@@ -20,6 +22,10 @@ public class BoardState {
     
     public Color getHexColor(int x, int y) {
         Hex hex = board.getHex(x, y);
+        
+        if(selectedCoords != null && selectedCoords.equals(new Coords(x, y))) {
+            return new Color(0, 0, 200);
+        }
         
         return new Color(hex.red, hex.green, 0);
     }
@@ -30,5 +36,9 @@ public class BoardState {
     
     public int getHeight() {
         return board.getHeight();
+    }
+    
+    public void setSelectedHex(Coords coords) {
+        selectedCoords = coords;
     }
 }
