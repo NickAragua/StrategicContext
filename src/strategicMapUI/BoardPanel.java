@@ -52,7 +52,7 @@ public class BoardPanel extends JPanel implements MouseWheelListener, MouseMotio
         super.paintComponent(g);
         
         Graphics2D g2D = (Graphics2D) g;        
-        g2D.translate(xOrigin + 20, yOrigin + 20);
+        g2D.translate(xOrigin, yOrigin + HEX_Y_RADIUS);
         g2D.scale(scale, scale);
         
         postOriginTransform = g2D.getTransform();
@@ -107,19 +107,7 @@ public class BoardPanel extends JPanel implements MouseWheelListener, MouseMotio
         
         for(int x = 0; x < boardState.getWidth(); x++) {            
             for(int y = boardState.getHeight() - 1; y >= 0; y--) {
-                if(detectHex) {
-                    Point2D transformedClickedPoint = postOriginTransform.transform((Point2D) clickedPoint, null);
-                    
-                    if(graphHex.contains(transformedClickedPoint)) {
-                        int detectedY = y;
-                        if(x % 2 == 1) {
-                            detectedY++;
-                        }
-                        
-                        boardState.setSelectedHex(new Coords(x - 1, detectedY));
-                        return;
-                    }
-                } else if(outline) {
+                if(outline) {
                     g2D.setColor(new Color(0, 0, 0));
                     g2D.drawPolygon(graphHex);
                 } else {
@@ -127,9 +115,7 @@ public class BoardPanel extends JPanel implements MouseWheelListener, MouseMotio
                     g2D.fillPolygon(graphHex);
                 }
                 
-                if(!detectHex) {
-                    g2D.drawString(x + "," + y, graphHex.xpoints[0] + (xRadius / 4), graphHex.ypoints[0] + yRadius);
-                }
+                g2D.drawString(x + "," + y, graphHex.xpoints[0] + (xRadius / 4), graphHex.ypoints[0] + yRadius);
                 graphHex.translate(0, yRadius * 2);
             }
             
@@ -146,9 +132,58 @@ public class BoardPanel extends JPanel implements MouseWheelListener, MouseMotio
        
     }
 
+    /**
+     * Helper function that detects which hex was clicked
+     * by basically replicating the drawHexes function as a 'dry run'.
+     * @param point
+     */
+    private void detectClickedHex(Point point) {
+        Polygon graphHex = new Polygon();
+        int xRadius = (int) (HEX_X_RADIUS * scale);
+        int yRadius = (int) (HEX_Y_RADIUS * scale);
+        
+        graphHex.addPoint(-xRadius/2, -yRadius);
+        graphHex.addPoint(-xRadius, 0);
+        graphHex.addPoint(-xRadius/2, yRadius);
+        graphHex.addPoint(xRadius/2, yRadius);
+        graphHex.addPoint(xRadius, 0);
+        graphHex.addPoint(xRadius/2, -yRadius);
+
+        graphHex.translate(xRadius + (int) postOriginTransform.getTranslateX(), (int) (yRadius * 2) + (int) postOriginTransform.getTranslateY());
+        AffineTransform noScaleTransform = new AffineTransform();
+        noScaleTransform.setToTranslation(postOriginTransform.getTranslateX(), postOriginTransform.getTranslateY());
+        Point2D transformedClickedPoint = noScaleTransform.transform((Point2D) point, null);
+        
+        for(int x = 0; x < boardState.getWidth(); x++) {            
+            for(int y = boardState.getHeight() - 1; y >= 0; y--) {                    
+                if(graphHex.contains(transformedClickedPoint)) {
+                    int detectedY = y;
+                    
+                    boardState.setSelectedHex(new Coords(x, detectedY));
+                    return;
+                }
+                
+                graphHex.translate(0, yRadius * 2);
+            }
+            
+            int yTranslation = boardState.getHeight() * yRadius * 2;
+            if(x % 2 == 0) {
+                yTranslation += yRadius;
+            } else {
+                yTranslation -= yRadius;
+            }
+            
+            graphHex.translate((int) (xRadius * 1.5), -yTranslation);
+        }
+        
+        // we have not detected a clicked hex, so de-select
+        boardState.setSelectedHex(null);
+    }
+    
     @Override
     public void mouseWheelMoved(MouseWheelEvent e) {
         scale += (float) e.getWheelRotation() / 10;
+        postOriginTransform.scale(scale, scale);
         this.repaint();
     }
     
@@ -179,7 +214,7 @@ public class BoardPanel extends JPanel implements MouseWheelListener, MouseMotio
         if(e.getButton() == MouseEvent.BUTTON1)
         {
             clickedPoint = e.getPoint();
-            drawHexes(null, false, true);
+            detectClickedHex(clickedPoint);
             //boardState.setSelectedHex(detectClickedBoardCoords(e));
             
             /*if(boardState.getSelectedEncounter() != null) {
