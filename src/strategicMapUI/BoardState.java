@@ -30,6 +30,14 @@ public class BoardState {
         return new Color(hex.red, hex.green, 0);
     }
     
+    /*public int getForceCount(Coords coords) {
+        //return board.get
+    }*/
+    
+    public int getForceCount(Coords coords, int team) {
+        return board.getForceCount(coords, team);
+    }
+    
     public int getWidth() {
         return board.getWidth();
     }

@@ -25,4 +25,8 @@ public class Coords {
         return ((Coords) other).getX() == x &&
                 ((Coords) other).getY() == y;
     }
+    
+    public int hashCode() {
+        return x << 16 + y; // Pretty sure we won't be playing on a board bigger than 2^16
+    }
 }

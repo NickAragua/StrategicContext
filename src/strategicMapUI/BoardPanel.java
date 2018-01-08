@@ -13,6 +13,7 @@ import java.awt.event.MouseWheelEvent;
 import java.awt.event.MouseWheelListener;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Point2D;
+import java.awt.geom.RoundRectangle2D;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -57,9 +58,11 @@ public class BoardPanel extends JPanel implements MouseWheelListener, MouseMotio
         
         postOriginTransform = g2D.getTransform();
 
-        drawHexes(g2D, false, false);
+        drawHexes(g2D, false);
         g2D.setTransform(postOriginTransform);
-        drawHexes(g2D, true, false);
+        drawHexes(g2D, true);
+        g2D.setTransform(postOriginTransform);
+        drawForces(g2D);
         /*g2D.translate(dragTranslation.getX(), dragTranslation.getY());
         g2D.translate(SQUARE_HALF_SIZE, SQUARE_HALF_SIZE);
         AffineTransform originalTransform = g2D.getTransform();
@@ -91,7 +94,7 @@ public class BoardPanel extends JPanel implements MouseWheelListener, MouseMotio
      * @param outline
      * @param detectHex
      */
-    private void drawHexes(Graphics2D g2D, boolean outline, boolean detectHex) {
+    private void drawHexes(Graphics2D g2D, boolean outline) {
         Polygon graphHex = new Polygon();
         int xRadius = HEX_X_RADIUS;
         int yRadius = HEX_Y_RADIUS;
@@ -116,18 +119,13 @@ public class BoardPanel extends JPanel implements MouseWheelListener, MouseMotio
                 }
                 
                 g2D.drawString(x + "," + y, graphHex.xpoints[0] + (xRadius / 4), graphHex.ypoints[0] + yRadius);
-                graphHex.translate(0, yRadius * 2);
+                
+                int[] downwardVector = getDownwardYVector();
+                graphHex.translate(downwardVector[0], downwardVector[1]);
             }
             
-            //g2D.setTransform(originalTransform);    
-            int yTranslation = boardState.getHeight() * yRadius * 2;
-            if(x % 2 == 0) {
-                yTranslation += yRadius;
-            } else {
-                yTranslation -= yRadius;
-            }
-            
-            graphHex.translate((int) (xRadius * 1.5), -yTranslation);
+            int[] translationVector = getRightAndUPVector(x % 2 == 0);
+            graphHex.translate(translationVector[0], translationVector[1]);
         }
        
     }
@@ -163,21 +161,67 @@ public class BoardPanel extends JPanel implements MouseWheelListener, MouseMotio
                     return;
                 }
                 
-                graphHex.translate(0, yRadius * 2);
+                int[] downwardVector = getDownwardYVector();
+                graphHex.translate(downwardVector[0], downwardVector[1]);
             }
             
-            int yTranslation = boardState.getHeight() * yRadius * 2;
-            if(x % 2 == 0) {
-                yTranslation += yRadius;
-            } else {
-                yTranslation -= yRadius;
-            }
-            
-            graphHex.translate((int) (xRadius * 1.5), -yTranslation);
+            int[] translationVector = getRightAndUPVector(x % 2 == 0);
+            graphHex.translate(translationVector[0], translationVector[1]);
         }
         
         // we have not detected a clicked hex, so de-select
         boardState.setSelectedHex(null);
+    }
+    
+    private void drawForces(Graphics2D g2D) {
+        int xRadius = HEX_X_RADIUS * 3 / 4;
+        int yRadius = HEX_Y_RADIUS * 3 / 4;
+        
+        // make note of the current transform
+        AffineTransform push = g2D.getTransform();
+        
+        RoundRectangle2D forceIcon = new RoundRectangle2D.Float(HEX_X_RADIUS / 2, HEX_Y_RADIUS / 2, xRadius, yRadius, HEX_X_RADIUS / 8, HEX_Y_RADIUS / 8);
+        for(int x = 0; x < boardState.getWidth(); x++) {
+            for(int y = boardState.getHeight() - 1; y >= 0; y--) {
+                if(boardState.getForceCount(new Coords(x, y), 1) > 0) {
+                    g2D.setColor(Color.BLUE);
+                    g2D.fill(forceIcon);
+                    g2D.setColor(Color.black);
+                    g2D.draw(forceIcon);
+                }
+                
+                int[] downwardVector = getDownwardYVector();
+                g2D.translate(downwardVector[0], downwardVector[1]);
+            }
+            
+            int[] translationVector = getRightAndUPVector(x % 2 == 0);
+            g2D.translate(translationVector[0], translationVector[1]);
+        }
+        
+        // put everything back the way it was
+        g2D.setTransform(push);
+    }
+    
+    /**
+     * Returns the translation that we need to make to render the "next downward" hex.
+     * @return
+     */
+    private int[] getDownwardYVector() {
+        return new int[] { 0, (int) (HEX_Y_RADIUS * 2) };
+    }
+    
+    private int[] getRightAndUPVector(boolean evenColumn) {
+        int yRadius = (int) (HEX_Y_RADIUS);
+        int xRadius = (int) (HEX_X_RADIUS);
+        
+        int yTranslation = boardState.getHeight() * yRadius * 2;
+        if(evenColumn) {
+            yTranslation += yRadius;
+        } else {
+            yTranslation -= yRadius;
+        }
+        
+        return new int[] {(int) (xRadius * 1.5), -yTranslation};
     }
     
     @Override
@@ -275,38 +319,5 @@ public class BoardPanel extends JPanel implements MouseWheelListener, MouseMotio
     public void mouseClicked(MouseEvent e) {
         // TODO Auto-generated method stub
         
-    }
-    
-    /**
-     * Transforms a set of coordinates on the board panel into coordinates usable by the board.
-     * @param localX
-     * @param localY
-     * @return
-     */
-    public Coords detectClickedBoardCoords(MouseEvent e) {
-        int localX = e.getX();
-        int localY = e.getY();
-        
-        localX += xOrigin + (HEX_X_RADIUS * 2* scale);
-        localY += yOrigin + (HEX_Y_RADIUS * 2* scale);
-        
-        localX /= (HEX_X_RADIUS * 2 * scale);
-        
-        if(localX % 2 == 0) {
-            localY -= HEX_Y_RADIUS * scale * 1.5;
-        } else {
-            localY += HEX_Y_RADIUS * scale * 1.5;
-        }
-        
-        localY /= HEX_Y_RADIUS * 2 * scale;
-        localY = boardState.getHeight() - localY + 1;
-
-        System.out.println("Clicked" + e.getX() + ":" + e.getY() + " resolves to " + localX + ":" + localY);
-        
-        // now we have moved into a reference frame with 0,0 as the point in the center of the hex at (0, height)
-        
-        clickedPoint = new Point(localX, localY); //new Point(localX / (HEX_X_RADIUS * 2), localY / (HEX_Y_RADIUS * 2));
-        
-        return new Coords(localX - 1, localY);
     }
 }
