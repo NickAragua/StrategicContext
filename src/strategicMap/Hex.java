@@ -1,5 +1,6 @@
 package strategicMap;
 
+import strategicMap.terrain.PlainsTerrain;
 import strategicMap.terrain.TerrainType;
 
 public class Hex {
@@ -8,6 +9,9 @@ public class Hex {
     private TerrainType terrain;
 
     public TerrainType getTerrain() {
+        if (null == terrain) {
+            terrain = new PlainsTerrain();
+        }
         return terrain;
     }
 

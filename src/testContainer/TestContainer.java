@@ -14,7 +14,10 @@ import strategicMapUI.BoardPanel;
 
 public class TestContainer {
     public static void main(String[] args) {
-        
+
+        System.out.println("Working Directory = " +
+                System.getProperty("user.dir"));
+
         SwingUtilities.invokeLater(new Runnable() {
             public void run() {
                 createAndShowGUI(); 

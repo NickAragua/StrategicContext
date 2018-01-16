@@ -13,7 +13,8 @@ public abstract class TerrainType {
     public static final int MOUNTAINS = 5;
     public static final int WATER = 6;
 
-    public abstract String getType();
+    public abstract int getType();
+    public abstract String getTileName();
 
     private ArrayList<TerrainMod> terrainMods;
 

@@ -14,19 +14,24 @@ import java.awt.event.MouseWheelListener;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Point2D;
 import java.awt.geom.RoundRectangle2D;
+import java.awt.image.AffineTransformOp;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.imageio.ImageIO;
 import javax.swing.JPanel;
 
 import strategicMap.Coords;
 
 
 public class BoardPanel extends JPanel implements MouseWheelListener, MouseMotionListener, MouseListener {
-    private static final int HEX_X_RADIUS = 40;
-    private static final int HEX_Y_RADIUS = 40;
-    
-    private float scale = 1;
+    private static final int HEX_X_RADIUS = 42;
+    private static final int HEX_Y_RADIUS = 37;
+
+    private float scale = 1f;
     private int xOrigin = 0;
     private int yOrigin = 0;
     
@@ -116,6 +121,14 @@ public class BoardPanel extends JPanel implements MouseWheelListener, MouseMotio
                 } else {
                     g2D.setColor(boardState.getHexColor(x, y));
                     g2D.fillPolygon(graphHex);
+
+                    BufferedImage tile;
+                    try {
+                        tile = ImageIO.read(new File(System.getProperty("user.dir") + "\\assets\\" + boardState.getHex(x,y).getTerrain().getTileName() + ".png"));
+                        g2D.setClip(graphHex);
+                        g2D.drawImage(tile, null, (int) graphHex.getBounds2D().getX(), (int) graphHex.getBounds2D().getY() + 1);
+                        g2D.setClip(null);
+                    } catch (IOException e) {}
                 }
                 
                 g2D.drawString(x + "," + y, graphHex.xpoints[0] + (xRadius / 4), graphHex.ypoints[0] + yRadius);
@@ -147,13 +160,13 @@ public class BoardPanel extends JPanel implements MouseWheelListener, MouseMotio
         graphHex.addPoint(xRadius, 0);
         graphHex.addPoint(xRadius/2, -yRadius);
 
-        graphHex.translate(xRadius + (int) postOriginTransform.getTranslateX(), (int) (yRadius * 2) + (int) postOriginTransform.getTranslateY());
+        graphHex.translate( xRadius + (int) postOriginTransform.getTranslateX(), (int) (yRadius) + (int) postOriginTransform.getTranslateY());
         AffineTransform noScaleTransform = new AffineTransform();
-        noScaleTransform.setToTranslation(postOriginTransform.getTranslateX(), postOriginTransform.getTranslateY());
+        noScaleTransform.setToTranslation(postOriginTransform.getTranslateX(), postOriginTransform.getTranslateY() - yRadius/2);
         Point2D transformedClickedPoint = noScaleTransform.transform((Point2D) point, null);
         
         for(int x = 0; x < boardState.getWidth(); x++) {            
-            for(int y = boardState.getHeight() - 1; y >= 0; y--) {                    
+            for(int y = boardState.getHeight() - 1; y >= 0; y--) {
                 if(graphHex.contains(transformedClickedPoint)) {
                     int detectedY = y;
                     
@@ -162,11 +175,11 @@ public class BoardPanel extends JPanel implements MouseWheelListener, MouseMotio
                 }
                 
                 int[] downwardVector = getDownwardYVector();
-                graphHex.translate(downwardVector[0], downwardVector[1]);
+                graphHex.translate((int) (downwardVector[0] * scale), (int) (downwardVector[1] * scale));
             }
             
             int[] translationVector = getRightAndUPVector(x % 2 == 0);
-            graphHex.translate(translationVector[0], translationVector[1]);
+            graphHex.translate((int) (translationVector[0] * scale), (int) (translationVector[1] * scale));
         }
         
         // we have not detected a clicked hex, so de-select

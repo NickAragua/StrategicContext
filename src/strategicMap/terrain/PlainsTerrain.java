@@ -4,12 +4,16 @@ import strategicMap.HexDirection;
 import strategicMap.StrategicMovementType;
 
 public class PlainsTerrain extends TerrainType {
-    private static final String type = "Plains";
     private static final int baseMoveCost = 1;
 
     @Override
-    public String getType() {
-        return type;
+    public int getType() {
+        return TerrainType.PLAINS;
+    }
+
+    @Override
+    public String getTileName() {
+        return "plains";
     }
 
     @Override
