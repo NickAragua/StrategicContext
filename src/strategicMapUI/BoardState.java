@@ -30,10 +30,6 @@ public class BoardState {
         return new Color(hex.red, hex.green, 0);
     }
     
-    /*public int getForceCount(Coords coords) {
-        //return board.get
-    }*/
-    
     public int getForceCount(Coords coords, int team) {
         return board.getForceCount(coords, team);
     }
@@ -48,5 +44,13 @@ public class BoardState {
     
     public void setSelectedHex(Coords coords) {
         selectedCoords = coords;
+    }
+    
+    public Coords getSelectedHex() {
+        return selectedCoords;
+    }
+    
+    public boolean hasSelectedHex() {
+        return selectedCoords != null;
     }
 }
