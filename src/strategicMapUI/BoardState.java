@@ -29,6 +29,10 @@ public class BoardState {
         
         return new Color(hex.red, hex.green, 0);
     }
+
+    public Hex getHex(int x, int y) {
+        return board.getHex(x, y);
+    }
     
     public int getForceCount(Coords coords, int team) {
         return board.getForceCount(coords, team);
