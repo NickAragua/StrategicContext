@@ -35,10 +35,6 @@ public class TestContainer {
         BoardState boardState = new BoardState(new Board(10, 10));
         BoardPanel boardPanel = new BoardPanel(boardState);
         
-        //boardPanel.setPreferredSize(new Dimension(824, 768));
-        //boardPanel.setFocusable(true);
-        //boardPanel.setFocusCycleRoot(true);
-        
         GridBagConstraints boardPaneConstraints = new GridBagConstraints();
         boardPaneConstraints.gridx = GridBagConstraints.RELATIVE;
         boardPaneConstraints.gridy = 0;
@@ -48,16 +44,6 @@ public class TestContainer {
         boardPaneConstraints.weighty = 1;
         boardPaneConstraints.fill = GridBagConstraints.BOTH;
         frame.getContentPane().add(boardPanel, boardPaneConstraints);
-        
-        boardPanel.addMouseWheelListener(boardPanel);
-        boardPanel.addMouseListener(boardPanel);
-        boardPanel.addMouseMotionListener(boardPanel);
-        //boardPanel.addKeyListener(boardPanel);
-        //infoPane.addKeyListener(boardPanel);
-        /*for(Component c : frame.getContentPane().getComponents()) {
-            c.addKeyListener(boardPanel);
-        }
-        frame.addKeyListener(boardPanel);*/
         
         frame.pack();
         frame.setVisible(true);

@@ -6,6 +6,7 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Point;
 import java.awt.Polygon;
+import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
@@ -22,12 +23,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javax.imageio.ImageIO;
+import javax.swing.JButton;
+import javax.swing.JInternalFrame;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
 
 import strategicMap.Coords;
 
 
-public class BoardPanel extends JPanel implements MouseWheelListener, MouseMotionListener, MouseListener {
+public class BoardPanel extends JPanel implements MouseWheelListener, MouseMotionListener {
     private static final int HEX_X_RADIUS = 42;
     private static final int HEX_Y_RADIUS = 37;
 
@@ -49,15 +53,38 @@ public class BoardPanel extends JPanel implements MouseWheelListener, MouseMotio
     
     ArrayList<ArrayList<Polygon>> hexes = new ArrayList<>(); 
     
+    InfoPanel infoPanel;
+    
     public BoardPanel(BoardState state) {
         boardState = state;
+        
+        this.addMouseListener(new MouseAdapter() {
+            public void mousePressed(MouseEvent e) {
+                mousePressedHandler(e);
+            }
+            
+            public void mouseReleased(MouseEvent e) {
+                mouseReleasedHandler(e);
+            }
+        });
+        
+        this.addMouseWheelListener(this);
+        this.addMouseMotionListener(this);
+        this.setLayout(null);
+        
+        infoPanel = new InfoPanel();
+        infoPanel.setPreferredSize(new Dimension(200, 200));
+        infoPanel.setBounds(10, 10, 200, 200);
+        infoPanel.setVisible(false);
+        add(infoPanel);
     }
     
     @Override
     public void paintComponent(Graphics g) {
         super.paintComponent(g);
         
-        Graphics2D g2D = (Graphics2D) g;        
+        Graphics2D g2D = (Graphics2D) g;   
+        AffineTransform originTransform = g2D.getTransform();
         g2D.translate(xOrigin, yOrigin + HEX_Y_RADIUS);
         g2D.scale(scale, scale);
         
@@ -68,23 +95,8 @@ public class BoardPanel extends JPanel implements MouseWheelListener, MouseMotio
         drawHexes(g2D, true);
         g2D.setTransform(postOriginTransform);
         drawForces(g2D);
-        /*g2D.translate(dragTranslation.getX(), dragTranslation.getY());
-        g2D.translate(SQUARE_HALF_SIZE, SQUARE_HALF_SIZE);
-        AffineTransform originalTransform = g2D.getTransform();
-        drawSquares(g2D, false);
-        g2D.setTransform(originalTransform); // be nice, set the "cursor" back to where it started      
-        drawSquares(g2D, true);
-        g2D.setTransform(originalTransform);
-        drawSelectedSquare(g2D);
-        g2D.setTransform(originalTransform);
-        drawForces(g2D);
-        drawPlannedRoutes(g2D);
-        drawExecutedMovements(g2D);
-        drawEncounters(g2D);
-        drawEncounterPaneLines(g2D);*/
-        g2D.setTransform(postOriginTransform);
         
-        //g2D.setTransform(realOriginalTransform);
+        g2D.setTransform(originTransform);
     }
     
     @Override
@@ -266,13 +278,18 @@ public class BoardPanel extends JPanel implements MouseWheelListener, MouseMotio
         
     }
     
-    @Override
-    public void mouseReleased(MouseEvent e) {
+    public void mouseReleasedHandler(MouseEvent e) {
         if(e.getButton() == MouseEvent.BUTTON1)
         {
             clickedPoint = e.getPoint();
             detectClickedHex(clickedPoint);
-            //boardState.setSelectedHex(detectClickedBoardCoords(e));
+            
+            if(boardState.hasSelectedHex()) {
+                infoPanel.displayInfo(boardState.getSelectedHex().toString());
+                infoPanel.setVisible(true);
+            } else {
+                infoPanel.setVisible(false);
+            }
             
             /*if(boardState.getSelectedEncounter() != null) {
                 int rX = (int) getRenderingX(boardState.getSelectedEncounter().getPosition().getX());
@@ -305,32 +322,12 @@ public class BoardPanel extends JPanel implements MouseWheelListener, MouseMotio
                 }
             }
         }
-        
-        this.repaint();*/
+        */
         mouseDragEndPoint = e.getPoint();
         this.repaint();
     }
 
-    @Override
-    public void mouseEntered(MouseEvent e) {
-        // TODO Auto-generated method stub
-        
-    }
-
-    @Override
-    public void mouseExited(MouseEvent e) {
-        // TODO Auto-generated method stub
-        
-    }
-
-    @Override
-    public void mousePressed(MouseEvent e) {
+    public void mousePressedHandler(MouseEvent e) {
         mouseDragStartPoint = e.getPoint();
-    }
-
-    @Override
-    public void mouseClicked(MouseEvent e) {
-        // TODO Auto-generated method stub
-        
     }
 }
