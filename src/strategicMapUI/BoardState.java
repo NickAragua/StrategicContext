@@ -3,6 +3,8 @@ import java.awt.Color;
 
 import strategicMap.Board;
 import strategicMap.Coords;
+import strategicMap.Encounter;
+import strategicMap.Force;
 import strategicMap.Hex;
 
 /**
@@ -54,7 +56,29 @@ public class BoardState {
         return selectedCoords;
     }
     
+    /**
+     * Generates an html string suitable for displaying the details of a hex in the info panel.
+     * @return
+     */
+    public String getSelectedHexDetails() {
+        StringBuilder forceBuilder = new StringBuilder();
+        for(Force force : board.getForcesAt(selectedCoords)) {
+            forceBuilder.append(force.getFullSummary());
+            forceBuilder.append("<br/>");
+        }
+        
+        return String.format("<html>Hex (%s, %s) selected.<br/>%s</html>", selectedCoords.getX(), selectedCoords.getY(), forceBuilder.toString());
+    }
+    
     public boolean hasSelectedHex() {
         return selectedCoords != null;
+    }
+    
+    public Encounter getSelectedEncounter() {
+        if(selectedCoords != null) {
+            return board.getEncounterAt(selectedCoords);
+        }
+        
+        return null;
     }
 }

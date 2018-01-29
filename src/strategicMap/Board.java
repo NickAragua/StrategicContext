@@ -12,6 +12,10 @@ public class Board {
     private Hex[][] hexes;
     // forces, sorted by team and coordinates
     private Map<Coords, Map<Integer, Set<Force>>> teamForces;
+    private Set<Integer> teams;
+    
+    // encounters, sorted by coordinates
+    private Map<Coords, Encounter> encounters;
     int width;
     int height;
     
@@ -20,8 +24,10 @@ public class Board {
         this.width = width;
         this.height = height;
         teamForces = new HashMap<>();
+        teams = new HashSet<>();
+        encounters = new HashMap<>();
         
-        // just some code to place things on the board for testing
+        // anything below is code to place things on the board for testing
         for(int y = 0; y < height; y++) {
             for(int x = 0; x < width; x++) {
                 hexes[x][y] = new Hex();
@@ -31,10 +37,34 @@ public class Board {
         }
         
         for(int x = 0; x < 5; x++) {
-            Force force = new Force("Force " + x);
+            Force force = new Force("Force " + x + " Team 1", 1);
             Coords coords = new Coords(x, 5);
-            addForce(1, force, coords);
+            addForce(force, coords);
         }
+        
+        for(int x = 0; x < 5; x++) {
+            Force force = new Force("Force " + x + " Team 2", 2);
+            Coords coords = new Coords(x, 6);
+            addForce(force, coords);
+        }
+        
+        Set<Force> testInstigators = new HashSet<>();
+        testInstigators.addAll(getForcesAt(new Coords(4, 5)));
+        testInstigators.addAll(getForcesAt(new Coords(4, 6)));
+        Encounter testEnc = new Encounter(testInstigators, 1);
+        
+        Set<Force> testReinforcementsTeamOne = new HashSet<>();
+        testReinforcementsTeamOne.addAll(getForcesAt(new Coords(3, 5)));
+        //testReinforcementsTeamOne.addAll(getForcesAt(new Coords(2, 5)));
+        
+        Set<Force> testReinforcementsTeamTwo = new HashSet<>();
+        testReinforcementsTeamOne.addAll(getForcesAt(new Coords(3, 6)));
+        testReinforcementsTeamOne.addAll(getForcesAt(new Coords(2, 6)));
+        
+        testEnc.addPotentialSecondaryForces(testReinforcementsTeamOne);
+        testEnc.addPotentialSecondaryForces(testReinforcementsTeamTwo);
+        
+        encounters.put(new Coords(4, 5), testEnc);
     }
     
     public Hex getHex(int x, int y) {
@@ -49,7 +79,13 @@ public class Board {
         return height;
     }
     
-    public void addForce(int team, Force force, Coords coords) {
+    public void addForce(Force force, Coords coords) {
+        int team = force.getTeam();
+        
+        if(!teams.contains(team)) {
+            teams.add(team);
+        }
+        
         if(!teamForces.containsKey(coords)) {
             teamForces.put(coords, new HashMap<>());
         }
@@ -61,11 +97,58 @@ public class Board {
         teamForces.get(coords).get(team).add(force);
     }
     
+    /**
+     * Returns a count of all forces for the given team at the given coordinates.
+     * @param coords Coordinates
+     * @param team Team
+     * @return The force count.
+     */
     public int getForceCount(Coords coords, int team) {
+        return getForcesAt(coords, team).size();
+    }
+    
+    /**
+     * Returns a set of all forces for the given team at the given coordinates.
+     * @param coords Coordinates
+     * @param team Team
+     * @return Force set. Empty list if no forces found.
+     */
+    public Set<Force> getForcesAt(Coords coords, int team) {
         if(teamForces.containsKey(coords) && teamForces.get(coords).containsKey(team)) {
-            return teamForces.get(coords).get(team).size();
+            return teamForces.get(coords).get(team);
         }
         
-        return 0;
+        return new HashSet<Force>();
+    }
+    
+    /**
+     * Returns a set of all forces for at the given coordinates, regardless of team
+     * @param coords Coordinates
+     * @param team Team
+     * @return Force set. Empty list if no forces found.
+     */
+    public Set<Force> getForcesAt(Coords coords) {
+        HashSet<Force> retval = new HashSet<>();
+        
+        if(teamForces.containsKey(coords)) {
+            for(int team : teams) {
+                Set<Force> forces = teamForces.get(coords).get(team);
+                
+                if(forces != null) {
+                    retval.addAll(forces);
+                }
+            }
+        }
+        
+        return retval;
+    }
+    
+    /**
+     * Returns the encounter at the given coordinates
+     * @param coords
+     * @return
+     */
+    public Encounter getEncounterAt(Coords coords) {
+        return encounters.get(coords);
     }
 }

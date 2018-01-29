@@ -29,6 +29,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 
 import strategicMap.Coords;
+import strategicMap.Encounter;
 
 
 public class BoardPanel extends JPanel implements MouseWheelListener, MouseMotionListener {
@@ -54,6 +55,7 @@ public class BoardPanel extends JPanel implements MouseWheelListener, MouseMotio
     ArrayList<ArrayList<Polygon>> hexes = new ArrayList<>(); 
     
     InfoPanel infoPanel;
+    EncounterWizardPanel encounterPanel;
     
     public BoardPanel(BoardState state) {
         boardState = state;
@@ -77,6 +79,12 @@ public class BoardPanel extends JPanel implements MouseWheelListener, MouseMotio
         infoPanel.setBounds(10, 10, 200, 200);
         infoPanel.setVisible(false);
         add(infoPanel);
+        
+        encounterPanel = new EncounterWizardPanel();
+        encounterPanel.setPreferredSize(new Dimension (200, 200));
+        encounterPanel.setBounds(10, 10, 200, 200);
+        encounterPanel.setVisible(false);
+        add(encounterPanel);
     }
     
     @Override
@@ -90,9 +98,9 @@ public class BoardPanel extends JPanel implements MouseWheelListener, MouseMotio
         
         postOriginTransform = g2D.getTransform();
 
-        drawHexes(g2D, false);
-        g2D.setTransform(postOriginTransform);
         drawHexes(g2D, true);
+        g2D.setTransform(postOriginTransform);
+        drawHexes(g2D, false);
         g2D.setTransform(postOriginTransform);
         drawForces(g2D);
         
@@ -285,10 +293,19 @@ public class BoardPanel extends JPanel implements MouseWheelListener, MouseMotio
             detectClickedHex(clickedPoint);
             
             if(boardState.hasSelectedHex()) {
-                infoPanel.displayInfo(boardState.getSelectedHex().toString());
-                infoPanel.setVisible(true);
+                infoPanel.displayInfo(boardState.getSelectedHexDetails());
+                //infoPanel.setVisible(true);
+                
+                Encounter selectedEncounter = boardState.getSelectedEncounter();
+                if(boardState.getSelectedEncounter() != null) {
+                    encounterPanel.setEncounter(selectedEncounter);
+                    encounterPanel.setVisible(true);
+                } else {
+                    encounterPanel.setVisible(false);
+                }
             } else {
                 infoPanel.setVisible(false);
+                encounterPanel.setVisible(false);
             }
             
             /*if(boardState.getSelectedEncounter() != null) {
