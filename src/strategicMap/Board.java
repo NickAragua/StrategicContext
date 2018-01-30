@@ -12,14 +12,15 @@ public class Board {
     private Hex[][] hexes;
     // forces, sorted by team and coordinates
     private Map<Coords, Map<Integer, Set<Force>>> teamForces;
-    private Set<Integer> teams;
+    private Set<Team> teams;
+    private Team playerTeam;
     
     // encounters, sorted by coordinates
     private Map<Coords, Encounter> encounters;
     int width;
     int height;
     
-    public Board(int width, int height) {
+    public Board(int width, int height, int playerTeamID) {
         hexes = new Hex[width][height];
         this.width = width;
         this.height = height;
@@ -36,14 +37,17 @@ public class Board {
             }
         }
         
+        playerTeam = new Team("Player", playerTeamID, true);
+        Team opforTeam = new Team("Opfor", 2, false);
+        
         for(int x = 0; x < 5; x++) {
-            Force force = new Force("Force " + x + " Team 1", 1);
+            Force force = new Force("Force " + x + " Team 1", playerTeam);
             Coords coords = new Coords(x, 5);
             addForce(force, coords);
         }
         
         for(int x = 0; x < 5; x++) {
-            Force force = new Force("Force " + x + " Team 2", 2);
+            Force force = new Force("Force " + x + " Team 2", opforTeam);
             Coords coords = new Coords(x, 6);
             addForce(force, coords);
         }
@@ -51,7 +55,7 @@ public class Board {
         Set<Force> testInstigators = new HashSet<>();
         testInstigators.addAll(getForcesAt(new Coords(4, 5)));
         testInstigators.addAll(getForcesAt(new Coords(4, 6)));
-        Encounter testEnc = new Encounter(testInstigators, 1);
+        Encounter testEnc = new Encounter(testInstigators, this, opforTeam.getID());
         
         Set<Force> testReinforcementsTeamOne = new HashSet<>();
         testReinforcementsTeamOne.addAll(getForcesAt(new Coords(3, 5)));
@@ -79,8 +83,13 @@ public class Board {
         return height;
     }
     
+    public void addTeam(Team team) {
+        teams.add(team);
+        
+    }
+    
     public void addForce(Force force, Coords coords) {
-        int team = force.getTeam();
+        Team team = force.getTeam();
         
         if(!teams.contains(team)) {
             teams.add(team);
@@ -90,11 +99,11 @@ public class Board {
             teamForces.put(coords, new HashMap<>());
         }
         
-        if(!teamForces.get(coords).containsKey(team)) {
-            teamForces.get(coords).put(team, new HashSet<>());
+        if(!teamForces.get(coords).containsKey(team.getID())) {
+            teamForces.get(coords).put(team.getID(), new HashSet<>());
         }
         
-        teamForces.get(coords).get(team).add(force);
+        teamForces.get(coords).get(team.getID()).add(force);
     }
     
     /**
@@ -131,8 +140,8 @@ public class Board {
         HashSet<Force> retval = new HashSet<>();
         
         if(teamForces.containsKey(coords)) {
-            for(int team : teams) {
-                Set<Force> forces = teamForces.get(coords).get(team);
+            for(Team team : teams) {
+                Set<Force> forces = teamForces.get(coords).get(team.getID());
                 
                 if(forces != null) {
                     retval.addAll(forces);
@@ -150,5 +159,13 @@ public class Board {
      */
     public Encounter getEncounterAt(Coords coords) {
         return encounters.get(coords);
+    }
+    
+    public void removeEncounter(Encounter enc) {
+        encounters.remove(enc);
+    }
+    
+    public Team getPlayerTeam() {
+        return playerTeam;
     }
 }

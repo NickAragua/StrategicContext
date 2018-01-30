@@ -80,7 +80,7 @@ public class BoardPanel extends JPanel implements MouseWheelListener, MouseMotio
         infoPanel.setVisible(false);
         add(infoPanel);
         
-        encounterPanel = new EncounterWizardPanel();
+        encounterPanel = new EncounterWizardPanel(boardState);
         encounterPanel.setPreferredSize(new Dimension (200, 200));
         encounterPanel.setBounds(10, 10, 200, 200);
         encounterPanel.setVisible(false);

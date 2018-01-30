@@ -16,7 +16,8 @@ public class Encounter {
     Map<Integer, Integer> selectedRetreatThresholds;
     boolean finalized;
     
-    int attackingTeam;
+    Board board;
+    int attackingTeamID;
     // TODO: special objectives
     
     /**
@@ -25,19 +26,20 @@ public class Encounter {
      * @param coords
      * @param instigators
      */
-    public Encounter(Set<Force> instigators, int attackingTeam) {
+    public Encounter(Set<Force> instigators, Board board, int attackingTeamID) {
         primaryForces = new HashMap<>();
         potentialSecondaryForces = new HashMap<>();
         selectedSecondaryForces = new HashMap<>();
         selectedRetreatThresholds = new HashMap<>();
-        this.attackingTeam = attackingTeam;
+        this.attackingTeamID = attackingTeamID;
+        this.board = board;
         
         for(Force force : instigators) {
-            if(!primaryForces.containsKey(force.getTeam())) {
-                primaryForces.put(force.getTeam(), new HashSet<>());
+            if(!primaryForces.containsKey(force.getTeamID())) {
+                primaryForces.put(force.getTeamID(), new HashSet<>());
             }
             
-            primaryForces.get(force.getTeam()).add(force);
+            primaryForces.get(force.getTeamID()).add(force);
         }
     }
     
@@ -57,11 +59,11 @@ public class Encounter {
      * @param force
      */
     public void addPotentialSecondaryForce(Force force) {
-        if(!potentialSecondaryForces.containsKey(force.getTeam())) {
-            potentialSecondaryForces.put(force.getTeam(), new HashSet<>());
+        if(!potentialSecondaryForces.containsKey(force.getTeamID())) {
+            potentialSecondaryForces.put(force.getTeamID(), new HashSet<>());
         }
         
-        potentialSecondaryForces.get(force.getTeam()).add(force);
+        potentialSecondaryForces.get(force.getTeamID()).add(force);
     }
     
     /**
@@ -69,11 +71,11 @@ public class Encounter {
      * @param force
      */
     public void selectSecondaryForce(Force force) {
-        if(!selectedSecondaryForces.containsKey(force.getTeam())) {
-            selectedSecondaryForces.put(force.getTeam(), new HashSet<>());
+        if(!selectedSecondaryForces.containsKey(force.getTeamID())) {
+            selectedSecondaryForces.put(force.getTeamID(), new HashSet<>());
         }
         
-        selectedSecondaryForces.get(force.getTeam()).add(force);
+        selectedSecondaryForces.get(force.getTeamID()).add(force);
     }
     
     /**
@@ -125,8 +127,12 @@ public class Encounter {
         return primaryForces.keySet();
     }
     
-    public int getAttackingTeam() {
-        return attackingTeam;
+    public int getAttackingTeamID() {
+        return attackingTeamID;
+    }
+    
+    public boolean playerIsAttacker() {
+        return board.getPlayerTeam().getID() == attackingTeamID;
     }
     
     /**

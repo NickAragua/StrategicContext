@@ -32,7 +32,7 @@ public class TestContainer {
         frame.setSize(1024, 768);
         frame.getContentPane().setLayout(new GridBagLayout());
     
-        BoardState boardState = new BoardState(new Board(10, 10));
+        BoardState boardState = new BoardState(new Board(10, 10, 1));
         BoardPanel boardPanel = new BoardPanel(boardState);
         
         GridBagConstraints boardPaneConstraints = new GridBagConstraints();

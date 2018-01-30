@@ -81,4 +81,8 @@ public class BoardState {
         
         return null;
     }
+    
+    public void removeEncounterChain(Encounter enc) {
+        board.removeEncounter(enc);
+    }
 }

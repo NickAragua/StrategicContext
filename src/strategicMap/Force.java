@@ -1,10 +1,10 @@
 package strategicMap;
 
-public class Force {
+public class Force {    
     private String shortName;
-    private int team;
+    private Team team;
     
-    public Force(String shortName, int team) {
+    public Force(String shortName, Team team) {
         this.shortName = shortName;
         this.team = team;
     }
@@ -28,7 +28,11 @@ public class Force {
         return String.format("%s:<br/>%s", shortName, "Vindicator VND-1R<br/>Trebuchet TBT-5T<br/>Phoenix Hawk PXH-1D<br/>Firestarter FS9-K");
     }
     
-    public int getTeam() {
+    public int getTeamID() {
+        return team.getID();
+    }
+    
+    public Team getTeam() {
         return team;
     }
     
