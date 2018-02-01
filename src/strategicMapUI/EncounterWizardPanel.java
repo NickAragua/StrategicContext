@@ -12,6 +12,7 @@ import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JInternalFrame;
 import javax.swing.JLabel;
+import javax.swing.JSlider;
 
 import strategicMap.Encounter;
 import strategicMap.Force;
@@ -23,9 +24,11 @@ public class EncounterWizardPanel extends JInternalFrame implements ActionListen
     private final String ACTION_EVADE = "Evade";
     private final String ACTION_SPECIAL = "Special";
     private final String ACTION_FORCE_SELECTION_DONE = "Next";
+    private final String ACTION_COMMIT = "Commit";
     
     Encounter encounter;
     Map<Force, JCheckBox> forceSelectionCheckBoxes;
+    JSlider retreatThresholdSlider;
 
     private BoardState boardState;
     
@@ -34,6 +37,12 @@ public class EncounterWizardPanel extends JInternalFrame implements ActionListen
         this.setLayout(new GridBagLayout());
         this.boardState = boardState;
         forceSelectionCheckBoxes = new HashMap<>();
+        
+        retreatThresholdSlider = new JSlider();
+        retreatThresholdSlider.setMajorTickSpacing(5);
+        retreatThresholdSlider.setSnapToTicks(true);
+        retreatThresholdSlider.setPaintTicks(true);
+        retreatThresholdSlider.setPaintLabels(true);
     }
     
     public void setEncounter(Encounter encounter) {
@@ -42,19 +51,23 @@ public class EncounterWizardPanel extends JInternalFrame implements ActionListen
         displayEvadeElements(gbc);
     }
     
+    /**
+     * Displays the elements that are common to all stages of the wizard
+     * @param gbc
+     * @param readonly Whether or not the force selection is read only.
+     */
     private void displayCommonElements(GridBagConstraints gbc, boolean readonly) {
         gbc.gridy++;
         displayTeamSummaries(gbc);
         gbc.gridy++;
         displayForceSelection(gbc, readonly);
-        /*JLabel instigatorSummary;
-        JLabel playerLabel;
-        JLabel computerLabel;
-        JButton backButton;
-        JButton nextButton;
-        JButton confirmButton;*/
     }
     
+    /**
+     * Displays elements that are relevant to the user's selection on whether to engage or 
+     * avoid the encounter.
+     * @param gbc
+     */
     private void displayEvadeElements(GridBagConstraints gbc) {
         this.getContentPane().removeAll();
         gbc.gridy = 0;
@@ -104,6 +117,10 @@ public class EncounterWizardPanel extends JInternalFrame implements ActionListen
         this.repaint();
     }
     
+    /**
+     * Displays elements that are relevant to the user's selection of reinforcements for the fight.
+     * @param message A message informing the user whether their interception/evasion succeeded.
+     */
     private void displayForceChoiceDialog(String message) {
         this.getContentPane().removeAll();
         
@@ -131,12 +148,41 @@ public class EncounterWizardPanel extends JInternalFrame implements ActionListen
         this.repaint();
     }
     
+    /**
+     * Displays the wizard in a state where the player can choose objectives.
+     */
     private void displayObjectiveSelectionDialog() {
         GridBagConstraints gbc = new GridBagConstraints();
         this.getContentPane().removeAll();
         
         gbc.gridy = 0;
+        JLabel lblObjectiveSelection = new JLabel("Objective selection:");
+        getContentPane().add(lblObjectiveSelection, gbc);
+        
         displayCommonElements(gbc, true);
+        
+        gbc.gridy++;
+        gbc.gridx = 0;
+        gbc.anchor = GridBagConstraints.WEST;
+        JLabel lblRetreatThreshold = new JLabel("Select Retreat Threshold:");
+        getContentPane().add(lblRetreatThreshold, gbc);
+        
+        gbc.gridy++;
+        gbc.gridx = 0;
+        gbc.gridwidth = 2;
+        
+        retreatThresholdSlider.setMinimum(35);
+        retreatThresholdSlider.setMaximum(55);
+
+        this.getContentPane().add(retreatThresholdSlider, gbc);
+        
+        gbc.gridy++;
+        gbc.gridx = 0;
+        gbc.gridwidth = 4;
+        gbc.anchor = GridBagConstraints.EAST;
+        JButton btnCommit = new JButton(ACTION_COMMIT);
+        btnCommit.addActionListener(this);
+        this.getContentPane().add(btnCommit, gbc);
         
         this.validate();
         this.repaint();
@@ -220,6 +266,10 @@ public class EncounterWizardPanel extends JInternalFrame implements ActionListen
         }
     }
     
+    /**
+     * Displays a line with the names of the participating teams.
+     * @param gbc
+     */
     private void displayTeamSummaries(GridBagConstraints gbc) {
         String attackerText = "attacker";
         String defenderText = "defender";
@@ -266,8 +316,28 @@ public class EncounterWizardPanel extends JInternalFrame implements ActionListen
         case ACTION_FORCE_SELECTION_DONE:
             displayObjectiveSelectionDialog();
             break;
-            
+        case ACTION_COMMIT:
+            commitEncounter();
+            this.setVisible(false);
+            break;
         }
+    }
+    
+    /**
+     * Called in the event that the player, through some route, winds up having to fight.
+     */
+    private void commitEncounter() {
+        for(Force force : forceSelectionCheckBoxes.keySet()) {
+            JCheckBox forceBox = forceSelectionCheckBoxes.get(force);
+            
+            if(forceBox.isSelected()) {
+                encounter.selectSecondaryForce(force);
+            }
+        }
+        
+        encounter.setRetreatThreshold(boardState.getPlayerTeam().getID(), retreatThresholdSlider.getValue());
+        
+        encounter.finalize();
     }
     
     public Dimension getPreferredSize()

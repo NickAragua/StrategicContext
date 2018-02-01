@@ -163,4 +163,37 @@ public class Encounter {
         
         return sb.toString();
     }
+    
+    public String getFullDescription() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Encounter:");
+        
+        for(Integer team : primaryForces.keySet()) {
+            for(Force force : primaryForces.get(team)) {
+                sb.append(force.getShortName());
+                sb.append("<br/>");
+            }
+        }
+        
+        sb.append("<br/>");
+        
+        for(Integer team : selectedSecondaryForces.keySet()) {
+            for(Force force : selectedSecondaryForces.get(team)) {
+                sb.append(force.getShortName());
+                sb.append("<br/>");
+            }
+        }
+        
+        sb.append("<br/>");
+        
+        for(Integer team : selectedRetreatThresholds.keySet()) {
+            sb.append(String.format("%s retreat threshold: %% <br/>", board.getTeam(team).getName(), selectedRetreatThresholds.get(team)));
+        }
+        
+        if(isFinalized()) {
+            sb.append("Forces committed!<br/>");
+        }
+        
+        return sb.toString();
+    }
 }

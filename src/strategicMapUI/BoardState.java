@@ -6,6 +6,7 @@ import strategicMap.Coords;
 import strategicMap.Encounter;
 import strategicMap.Force;
 import strategicMap.Hex;
+import strategicMap.Team;
 
 /**
  * This class represents the UI-related state of the board, such as
@@ -61,13 +62,19 @@ public class BoardState {
      * @return
      */
     public String getSelectedHexDetails() {
-        StringBuilder forceBuilder = new StringBuilder();
-        for(Force force : board.getForcesAt(selectedCoords)) {
-            forceBuilder.append(force.getFullSummary());
-            forceBuilder.append("<br/>");
+        StringBuilder detailsBuilder = new StringBuilder();
+        
+        if(board.getEncounterAt(selectedCoords) != null) {
+            detailsBuilder.append(board.getEncounterAt(selectedCoords).getFullDescription());            
+        }
+        else {
+            for(Force force : board.getForcesAt(selectedCoords)) {
+                detailsBuilder.append(force.getFullSummary());
+                detailsBuilder.append("<br/>");
+            }
         }
         
-        return String.format("<html>Hex (%s, %s) selected.<br/>%s</html>", selectedCoords.getX(), selectedCoords.getY(), forceBuilder.toString());
+        return String.format("<html>Hex (%s, %s) selected.<br/>%s</html>", selectedCoords.getX(), selectedCoords.getY(), detailsBuilder.toString());
     }
     
     public boolean hasSelectedHex() {
@@ -84,5 +91,9 @@ public class BoardState {
     
     public void removeEncounterChain(Encounter enc) {
         board.removeEncounter(enc);
+    }
+    
+    public Team getPlayerTeam() {
+        return board.getPlayerTeam();
     }
 }

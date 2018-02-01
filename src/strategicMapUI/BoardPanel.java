@@ -294,12 +294,12 @@ public class BoardPanel extends JPanel implements MouseWheelListener, MouseMotio
             
             if(boardState.hasSelectedHex()) {
                 infoPanel.displayInfo(boardState.getSelectedHexDetails());
-                //infoPanel.setVisible(true);
+                infoPanel.setVisible(true);
                 
                 Encounter selectedEncounter = boardState.getSelectedEncounter();
                 if(boardState.getSelectedEncounter() != null) {
                     encounterPanel.setEncounter(selectedEncounter);
-                    encounterPanel.setVisible(true);
+                    encounterPanel.setVisible(!selectedEncounter.isFinalized());
                 } else {
                     encounterPanel.setVisible(false);
                 }

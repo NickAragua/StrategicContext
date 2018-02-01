@@ -12,7 +12,7 @@ public class Board {
     private Hex[][] hexes;
     // forces, sorted by team and coordinates
     private Map<Coords, Map<Integer, Set<Force>>> teamForces;
-    private Set<Team> teams;
+    private Map<Integer, Team> teams;
     private Team playerTeam;
     
     // encounters, sorted by coordinates
@@ -25,7 +25,7 @@ public class Board {
         this.width = width;
         this.height = height;
         teamForces = new HashMap<>();
-        teams = new HashSet<>();
+        teams = new HashMap<>();
         encounters = new HashMap<>();
         
         // anything below is code to place things on the board for testing
@@ -84,15 +84,14 @@ public class Board {
     }
     
     public void addTeam(Team team) {
-        teams.add(team);
-        
+        teams.put(team.getID(), team);
     }
     
     public void addForce(Force force, Coords coords) {
         Team team = force.getTeam();
         
-        if(!teams.contains(team)) {
-            teams.add(team);
+        if(!teams.containsKey(team.getID())) {
+            teams.put(team.getID(), team);
         }
         
         if(!teamForces.containsKey(coords)) {
@@ -140,8 +139,8 @@ public class Board {
         HashSet<Force> retval = new HashSet<>();
         
         if(teamForces.containsKey(coords)) {
-            for(Team team : teams) {
-                Set<Force> forces = teamForces.get(coords).get(team.getID());
+            for(int teamID : teams.keySet()) {
+                Set<Force> forces = teamForces.get(coords).get(teamID);
                 
                 if(forces != null) {
                     retval.addAll(forces);
@@ -167,5 +166,9 @@ public class Board {
     
     public Team getPlayerTeam() {
         return playerTeam;
+    }
+    
+    public Team getTeam(int teamID) {
+        return teams.get(teamID);
     }
 }
