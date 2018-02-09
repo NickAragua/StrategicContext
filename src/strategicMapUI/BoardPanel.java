@@ -6,33 +6,31 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Point;
 import java.awt.Polygon;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.awt.event.MouseWheelEvent;
 import java.awt.event.MouseWheelListener;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Point2D;
 import java.awt.geom.RoundRectangle2D;
-import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.List;
 
 import javax.imageio.ImageIO;
-import javax.swing.JButton;
-import javax.swing.JInternalFrame;
-import javax.swing.JLabel;
+import javax.swing.JMenuItem;
 import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
 
 import strategicMap.Coords;
 import strategicMap.Encounter;
 
 
-public class BoardPanel extends JPanel implements MouseWheelListener, MouseMotionListener {
+public class BoardPanel extends JPanel implements MouseWheelListener, MouseMotionListener, ActionListener {
     private static final int HEX_X_RADIUS = 42;
     private static final int HEX_Y_RADIUS = 37;
 
@@ -57,6 +55,12 @@ public class BoardPanel extends JPanel implements MouseWheelListener, MouseMotio
     InfoPanel infoPanel;
     EncounterWizardPanel encounterPanel;
     
+    JPopupMenu rightClickMenu;
+    
+    /**
+     * Constructor - initializes a board panel and its persistent components.
+     * @param state - The object used to interact with the underlying game rules
+     */
     public BoardPanel(BoardState state) {
         boardState = state;
         
@@ -85,6 +89,18 @@ public class BoardPanel extends JPanel implements MouseWheelListener, MouseMotio
         encounterPanel.setBounds(10, 10, 200, 200);
         encounterPanel.setVisible(false);
         add(encounterPanel);
+                
+        rightClickMenu = new JPopupMenu();
+        JMenuItem selectItem = new JMenuItem("Select");
+        selectItem.setActionCommand("Select");
+        selectItem.addActionListener(this);
+        rightClickMenu.add(selectItem);
+        
+        JMenuItem viewItem = new JMenuItem("View");
+        viewItem.setActionCommand("View");
+        viewItem.addActionListener(this);
+        rightClickMenu.add(viewItem);
+
     }
     
     @Override
@@ -168,7 +184,7 @@ public class BoardPanel extends JPanel implements MouseWheelListener, MouseMotio
      * by basically replicating the drawHexes function as a 'dry run'.
      * @param point
      */
-    private void detectClickedHex(Point point) {
+    private Coords detectClickedHex(Point point) {
         Polygon graphHex = new Polygon();
         int xRadius = (int) (HEX_X_RADIUS * scale);
         int yRadius = (int) (HEX_Y_RADIUS * scale);
@@ -190,8 +206,8 @@ public class BoardPanel extends JPanel implements MouseWheelListener, MouseMotio
                 if(graphHex.contains(transformedClickedPoint)) {
                     int detectedY = y;
                     
-                    boardState.setSelectedHex(new Coords(x, detectedY));
-                    return;
+                    //boardState.setSelectedHex(new Coords(x, detectedY));
+                    return new Coords(x, detectedY);
                 }
                 
                 int[] downwardVector = getDownwardYVector();
@@ -203,9 +219,14 @@ public class BoardPanel extends JPanel implements MouseWheelListener, MouseMotio
         }
         
         // we have not detected a clicked hex, so de-select
-        boardState.setSelectedHex(null);
+        //boardState.setSelectedHex(null);
+        return null;
     }
     
+    /**
+     * Helper function that draws the forces currently on the map
+     * @param g2D Graphics object on which to draw
+     */
     private void drawForces(Graphics2D g2D) {
         int xRadius = HEX_X_RADIUS * 3 / 4;
         int yRadius = HEX_Y_RADIUS * 3 / 4;
@@ -237,12 +258,18 @@ public class BoardPanel extends JPanel implements MouseWheelListener, MouseMotio
     
     /**
      * Returns the translation that we need to make to render the "next downward" hex.
-     * @return
+     * @return Two dimensional array with the first element being the x vector and the second being the y vector
      */
     private int[] getDownwardYVector() {
         return new int[] { 0, (int) (HEX_Y_RADIUS * 2) };
     }
     
+    /**
+     * Returns the translation that we need to make to move from the bottom of a column to the top of the next
+     * column to the right.
+     * @param evenColumn Whether the column we're currently in is odd or even
+     * @return Two dimensional array with the first element being the x vector and the second being the y vector
+     */
     private int[] getRightAndUPVector(boolean evenColumn) {
         int yRadius = (int) (HEX_Y_RADIUS);
         int xRadius = (int) (HEX_X_RADIUS);
@@ -287,39 +314,24 @@ public class BoardPanel extends JPanel implements MouseWheelListener, MouseMotio
     }
     
     public void mouseReleasedHandler(MouseEvent e) {
+        clickedPoint = e.getPoint();
+        Coords detectedHex = detectClickedHex(clickedPoint);
+        
+        // for now, if we haven't clicked in a valid location, don't do anything
+        if(detectedHex == null) {
+            return;
+        }
+                
         if(e.getButton() == MouseEvent.BUTTON1)
         {
-            clickedPoint = e.getPoint();
-            detectClickedHex(clickedPoint);
+            // if we have a force or forces selected
+            // have the board state give us a path object
+            // and then we will draw it
+        }
+        else if(e.getButton() == MouseEvent.BUTTON3) {
+            // dynamically set the popup menu items
             
-            if(boardState.hasSelectedHex()) {
-                infoPanel.displayInfo(boardState.getSelectedHexDetails());
-                infoPanel.setVisible(true);
-                
-                Encounter selectedEncounter = boardState.getSelectedEncounter();
-                if(boardState.getSelectedEncounter() != null) {
-                    encounterPanel.setEncounter(selectedEncounter);
-                    encounterPanel.setVisible(!selectedEncounter.isFinalized());
-                } else {
-                    encounterPanel.setVisible(false);
-                }
-            } else {
-                infoPanel.setVisible(false);
-                encounterPanel.setVisible(false);
-            }
-            
-            /*if(boardState.getSelectedEncounter() != null) {
-                int rX = (int) getRenderingX(boardState.getSelectedEncounter().getPosition().getX());
-                int rY = (int) getRenderingY(boardState.getSelectedEncounter().getPosition().getY());
-                
-                encounterPane.setEncounter(boardState.getSelectedEncounter());
-                encounterPane.setLocation(rX, rY);
-                this.add(encounterPane);
-                encounterPane.setVisible(true);
-            } else {
-                encounterPane.clearEncounter();
-                this.remove(encounterPane);
-            }*/
+            rightClickMenu.show(e.getComponent(), (int) clickedPoint.getX(), (int) clickedPoint.getY());
         }
         /*else if(e.getButton() == MouseEvent.BUTTON3)
         {
@@ -346,5 +358,32 @@ public class BoardPanel extends JPanel implements MouseWheelListener, MouseMotio
 
     public void mousePressedHandler(MouseEvent e) {
         mouseDragStartPoint = e.getPoint();
+    }
+    
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        Coords detectedHex = detectClickedHex(clickedPoint);
+        
+        switch(e.getActionCommand()) {
+        case "Select":
+            boardState.setSelectedHex(detectedHex);
+            showPanelsForHex(detectedHex);
+            break;
+        case "View":
+            showPanelsForHex(detectedHex);
+        }
+    }
+    
+    private void showPanelsForHex(Coords hex) {
+        infoPanel.displayInfo(boardState.getHexDetails(hex));
+        infoPanel.setVisible(true);
+        
+        Encounter selectedEncounter = boardState.getEncounterAt(hex);
+        if(selectedEncounter != null) {
+            encounterPanel.setEncounter(selectedEncounter);
+            encounterPanel.setVisible(!selectedEncounter.isFinalized());
+        } else {
+            encounterPanel.setVisible(false);
+        }
     }
 }

@@ -168,6 +168,7 @@ public class Encounter {
         StringBuilder sb = new StringBuilder();
         sb.append("Encounter:");
         
+        sb.append("<br/>Primary Participants:<br/>");
         for(Integer team : primaryForces.keySet()) {
             for(Force force : primaryForces.get(team)) {
                 sb.append(force.getShortName());
@@ -175,8 +176,7 @@ public class Encounter {
             }
         }
         
-        sb.append("<br/>");
-        
+        sb.append("<br/>Reinforcements:<br/>");        
         for(Integer team : selectedSecondaryForces.keySet()) {
             for(Force force : selectedSecondaryForces.get(team)) {
                 sb.append(force.getShortName());
@@ -187,7 +187,7 @@ public class Encounter {
         sb.append("<br/>");
         
         for(Integer team : selectedRetreatThresholds.keySet()) {
-            sb.append(String.format("%s retreat threshold: %% <br/>", board.getTeam(team).getName(), selectedRetreatThresholds.get(team)));
+            sb.append(String.format("%s retreat threshold: %s <br/>", board.getTeam(team).getName(), selectedRetreatThresholds.get(team)));
         }
         
         if(isFinalized()) {

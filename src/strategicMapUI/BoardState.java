@@ -57,28 +57,45 @@ public class BoardState {
         return selectedCoords;
     }
     
-    /**
-     * Generates an html string suitable for displaying the details of a hex in the info panel.
-     * @return
+    /** 
+     * Generates an html for displaying the details of a hex in the info panel.
+     * @param coords The coordinates of the hex to display
+     * @return HTML string
      */
-    public String getSelectedHexDetails() {
+    public String getHexDetails(Coords coords) {
         StringBuilder detailsBuilder = new StringBuilder();
         
-        if(board.getEncounterAt(selectedCoords) != null) {
-            detailsBuilder.append(board.getEncounterAt(selectedCoords).getFullDescription());            
+        if(board.getEncounterAt(coords) != null) {
+            detailsBuilder.append(board.getEncounterAt(coords).getFullDescription());            
         }
         else {
-            for(Force force : board.getForcesAt(selectedCoords)) {
+            for(Force force : board.getForcesAt(coords)) {
                 detailsBuilder.append(force.getFullSummary());
                 detailsBuilder.append("<br/>");
             }
         }
         
-        return String.format("<html>Hex (%s, %s) selected.<br/>%s</html>", selectedCoords.getX(), selectedCoords.getY(), detailsBuilder.toString());
+        return String.format("<html>Hex (%s, %s)<br/>%s</html>", coords.getX(), coords.getY(), detailsBuilder.toString());
+    }
+    
+    /**
+     * Generates an html string suitable for displaying the details of the currently selected hex in the info panel.
+     * @return HTML string
+     */
+    public String getSelectedHexDetails() {
+        return getHexDetails(selectedCoords);
     }
     
     public boolean hasSelectedHex() {
         return selectedCoords != null;
+    }
+    
+    public Encounter getEncounterAt(Coords coords) {
+        if(coords != null) {
+            return board.getEncounterAt(coords);
+        }
+        
+        return null;
     }
     
     public Encounter getSelectedEncounter() {
